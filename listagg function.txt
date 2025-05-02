@@ -1,0 +1,69 @@
+SELECT
+    job_title,
+    LISTAGG(        first_name,  ','    )
+	WITHIN GROUP(     ORDER BY   first_name ) AS employees
+FROM
+    employees
+GROUP BY
+    job_title
+ORDER BY
+    job_title;
+	
+Syntax: 	
+	LISTAGG (  [ALL] column_name [,delimiter])
+	WITHIN GROUP(   ORDER BY sort_expressions);
+
+
+Example Scenario:
+Suppose you have a table named employees with the following data:
+
+employee_id	department	name
+1	HR	Alice
+2	HR	Bob
+3	IT	Charlie
+4	IT	David
+5	Sales	Eve
+
+SELECT department, 
+       LISTAGG(name, ', ') WITHIN GROUP (ORDER BY name) AS employee_names
+FROM employees
+GROUP BY department;
+
+Result:
+department	employee_names
+HR			Alice, Bob
+IT			Charlie, David
+Sales		Eve
+
+
+
+
+
+
+
+
+
+
+
+
+conditional group-by eg:
+------------------------
+
+select
+    (case
+        when exp_date > sysdate then 1
+        when exp_date <= sysdate then 2
+        else 3
+     end) expired, count(*)
+from mytable
+group by expired;
+
+SELECT expired,
+       count(*)
+  FROM (SELECT (CASE
+                   WHEN exp_date > SYSDATE THEN 1
+                   WHEN exp_date <= SYSDATE THEN 2
+                   ELSE 3
+                 END) AS expired
+          FROM mytable)
+GROUP BY expired;

@@ -1,0 +1,22 @@
+with test_data ( x ) as (
+       select  10 from dual union all
+       select  20 from dual union all
+       select  30 from dual union all
+       select  30 from dual union all
+       select  30 from dual union all
+       select 100 from dual
+     )
+select x
+     , sum(x) over (order by x range between unbounded preceding and current row) range_sum
+     , sum(x) over (order by x rows  between unbounded preceding and current row) rows_sum
+from   test_data
+order by x;
+
+         X  RANGE_SUM   ROWS_SUM
+---------- ---------- ----------
+        10         10         10
+        20         30         30
+        30        120         60
+        30        120         90
+        30        120        120
+       100        220        220

@@ -1,0 +1,29 @@
+[4:34 PM] Christopher Vickers
+
+SELECT   T1.DTE_ADDED,
+         E.TYPE_ERROR,
+         T1.ERR,
+         TRIM(E.DSC_ERROR) DESCRIPT,
+         T1.CNT
+FROM    (   SELECT    A.DTE_ADDED,
+                   A.ERR, 
+             count(*) as CNT
+          FROM     (SELECT    01 AS ERRSEQ,
+                    H.DTE_ADDED,
+                    H.sak_tran_rdemo,
+                    H.CDE_ERROR1 AS ERR
+         FROM      T_RE_TEDS_TRANHIST_RDEMO  H
+         WHERE    ( H.CDE_ERROR1 <> '0000'
+                   or H.CDE_ERROR2 <> '0000'
+                   or H.CDE_ERROR3 <> '0000'
+                   or H.CDE_ERROR4 <> '0000'
+                   or H.CDE_ERROR5 <> '0000'
+                   or  H.CDE_ERROR6 <> '0000'
+                   )         
+                 )  A
+        where    A.dte_added  >= 20230613  -- add cycle date
+         group by A.DTE_ADDED,
+                  A.err  ) T1,
+                  T_TEDS_RECON_ERR_MSG E
+WHERE    T1.ERR = E.CDE_ERROR
+order BY 1,2,3;     

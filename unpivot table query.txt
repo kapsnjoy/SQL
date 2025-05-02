@@ -1,0 +1,36 @@
+Certainly! Unpivoting a table in SQL is a process of transforming columns into rows. 
+This can be particularly useful when you need to normalize your data. Here's an example to illustrate how you can achieve this using the UNPIVOT operator in SQL Server:
+
+Example Table
+Let's say you have a table named Sales with the following structure:
+
+Year	Q1	Q2	Q3	Q4
+2021	100	150	200	250
+2022	110	160	210	260
+Unpivot Query
+To transform this table so that each quarter's sales are in separate rows, you can use the UNPIVOT operator:
+
+
+SELECT 
+    Year,
+    Quarter,
+    Sales
+FROM 
+    (SELECT Year, Q1, Q2, Q3, Q4 FROM Sales) AS SourceTable
+UNPIVOT
+    (Sales FOR Quarter IN (Q1, Q2, Q3, Q4)) AS UnpivotedTable;
+Result
+The result of this query will be:
+
+Year	Quarter	Sales
+2021	Q1	100
+2021	Q2	150
+2021	Q3	200
+2021	Q4	250
+2022	Q1	110
+2022	Q2	160
+2022	Q3	210
+2022	Q4	260
+This transformation makes it easier to perform operations like aggregations and comparisons across different periods.
+
+If you need further assistance or have a different SQL dialect in mind, feel free to let me know!

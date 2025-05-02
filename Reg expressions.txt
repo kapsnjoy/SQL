@@ -1,0 +1,6 @@
+(regexp_instr(trim(recon.E_DTE_EFFECTIVE),'[[:alpha:]]') > 0)
+
+select * from t_re_teds_tran_relig recon
+where 
+dte_added = 20240216
+and ( not REGEXP_LIKE(E_DTE_END, '^[[:digit:]]+$'))

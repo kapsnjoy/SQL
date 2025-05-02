@@ -1,0 +1,10 @@
+-- partition Over example
+ SELECT
+ distinct b.id_medicaid, P.DTE_EFFECTIVE, P.DTE_END , P.AMT_PATNT_LIAB
+        ,max(P.DTE_END) over(partition by b.id_medicaid) as max_dte_end
+        ,b.sak_recip     
+FROM T_RE_PAT_LIAB P 
+    JOIN  T_RE_BASE B 
+      ON B.SAK_RECIP = p.SAK_RECIP
+   where b.id_medicaid = 'TD528299893'
+        ;

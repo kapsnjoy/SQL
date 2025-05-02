@@ -1,0 +1,100 @@
+create table PEDIT_E0017 as
+  	 
+with Emaxrow as 
+(
+select 
+	 id_medicaid 
+	,sak_pub_hlth
+	,Effdt
+	,Enddt
+from 
+	( select 
+             id_medicaid
+			,sak_recip
+			, sak_pub_hlth
+			, Effdt
+			, Enddt
+        from
+		( select 
+			m.id_medicaid as id_medicaid
+			,e.sak_recip as sak_recip
+			,e.sak_pub_hlth as sak_pub_hlth
+			,e.sak_pgm_elig
+			,e.dte_Effective
+			,e.dte_end
+			,e.dte_last_update
+			,cs.num_case
+			,cs.cde_state_cat
+			,aid.cde_aid_category 
+			,a.dte_Effective as Effdt
+			,a.dte_end as Enddt
+			,a.dte_last_update
+			,row_number() over (partition by a.sak_recip order by  a.dte_end desc) row_num
+			from 
+			  t_re_base m
+			, T_RE_ELIG e
+			, T_RE_AID_ELIG a
+			, T_cde_aid aid
+			, t_re_case cs
+            ,  t_re_teds_tranhist_relig relig
+			where 
+				m.SAK_RECIP = e.SAK_RECIP
+			and ind_active ='Y'
+			and dte_death = 0
+			and e.cde_status1 = ' '
+			and a.cde_status1 = ' '
+			and m.id_medicaid = Relig.id_medicaid
+            and relig.dte_added   = 20240216
+           and sak_pub_hlth in (1002,1003,1017,1058,1040,1050)  
+		   and e.SAK_RECIP = a.SAK_RECIP
+		   and e.sak_pgm_elig = a.sak_pgm_elig
+		   and a.sak_cde_aid = aid.sak_cde_aid
+		   and a.sak_Case  = cs.sak_Case
+			  ) 
+		 where row_num =1
+		 )
+         )  
+		 , Eligtran as (   select 
+				 recon.id_medicaid
+				,recon.NUM_CASE
+				,max(to_number(recon.E_DTE_EFFECTIVE)) as dte_effective            -- need to find the actual corresponding span in MMIS
+				,max(to_number(decode(recon.E_DTE_END,'00000000',22991231,recon.E_DTE_END))) as dte_end
+		  from    t_re_teds_tranhist_relig recon --new Elig recon table
+                , t_re_base m
+		 where recon.dte_added   = 20240216 -- cycle date
+	 	   and recon.id_medicaid  = m.id_medicaid
+           and m.ind_active ='Y'
+           and m.dte_death = 0
+		   and (REGEXP_LIKE(E_DTE_END, '^[[:digit:]]+$'))
+		   and (REGEXP_LIKE(E_DTE_EFFECTIVE, '^[[:digit:]]+$'))
+		   and ( (to_number(E_DTE_EFFECTIVE) <= to_number(E_DTE_END) and E_DTE_END <> '00000000') or  E_DTE_END = '00000000')
+		  and recon.num_case like 'TD%'
+		  and recon.MMIS_CDE_AID  in ('93','10','11','13','14','15','16','20','21','23','24','25','26','30','31','33','34','35','36','39',
+		'43','44','45','46','48','53','56','57','59','62','63','66','68','72','73','76','78','82','40',
+		'83','86','88','92','96','98','95','28','60','61','27','97','87','37','64','65','50','91')
+		   group by recon.id_medicaid
+		           ,recon.NUM_CASE
+             )
+    -- compare both Max(dte-ends) and show if
+    -- MMIS is Ongoing and Teds is termed
+    -- MMIS is termed and Teds is termed but MMIS-end-dt is > Teds + 7 days
+   select   Emaxrow.id_medicaid 
+            ,Emaxrow.sak_pub_hlth
+            ,Emaxrow.Effdt   -- MMIS dte-effective
+            ,Emaxrow.Enddt   -- MMIS dte-end
+            ,Eligtran.dte_effective -- Teds dte-effective  
+            ,Eligtran.dte_end   -- Teds dte-end
+            ,'E0017' as pedit
+    	from
+          Emaxrow
+        , Eligtran
+ where		
+		 Emaxrow.id_medicaid = Eligtran.id_medicaid
+  and ( ( Emaxrow.Enddt = 22991231 and Eligtran.dte_end <> 22991231)
+          or 
+        ( Emaxrow.enddt <> 22991231 and Eligtran.dte_end <> 22991231
+            and Emaxrow.enddt >  To_Number(TO_Char(To_Date(Eligtran.dte_end,'YYYYMMDD') + 7,'YYYYMMDD'))) 
+       )
+  	
+ ;
+ 

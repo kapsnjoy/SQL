@@ -1,0 +1,51 @@
+Connect By: Connect by is an Oracle-specific way to create data trees using SQL. It has two key clauses, start with and connect by.
+
+Start With
+You state which rows are the roots here. These are the rows that appear at the "top" of the tree.
+
+In a company org chart this is the CEO. Here that's employee_id 100, Steven King. So you can begin the chart with him using:
+
+start with employee_id = 100
+But if you do this, you need to change your query when a new CEO replaces him!
+
+It's better to go with a more generic method. The CEO has no manager they report to. So their manager_id is null. So you could identify them with:
+
+start with manager_id is null
+Connect By
+You state the parent-child relationship here. This links the columns that store the parent and child values. You access values from the parent row using the keyword prior.
+
+In a company each employee's "parent" is their manager. Thus you need to join the parent row's employee_id to the child's manager_id. So you connect the prior employee_id to the current manager_id, like so:
+
+connect by prior employee_id = manager_id
+Put this all together and you get the following query:
+
+eg:1) 
+select * from employees
+start with manager_id is null
+connect by prior employee_id = manager_id;
+
+eg:2)
+
+with levels as (
+  select level id
+  from dual
+  connect by level <= 4
+),
+all_data as (
+  select
+    case l.id
+      when 1 then l1_proj_id
+      when 2 then l2_proj_id
+      when 3 then l3_proj_id
+      when 4 then l4_proj_id
+    end as project_id,
+    t.hours_charged
+  from
+    table t,
+    levels l
+)
+select
+  project_id, sum (hours_charged) as hours_charged
+from all_data
+where project_id is not null
+group by project_id

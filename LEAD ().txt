@@ -1,0 +1,25 @@
+SELECT 
+	salesman_id,
+	year, 
+	sales,
+	LEAD(sales) OVER (
+		ORDER BY year
+	) following_year_sales
+FROM 
+	salesman_performance
+WHERE
+	salesman_id = 55;
+	
+	
+	Just shows the Sales of the next row for each current row, and shows Null for the last row.
+	
+	SELECT 
+	salesman_id,
+	year, 
+	sales,
+	LEAD(sales) OVER (
+		PARTITION BY SALESMAN_ID
+		ORDER BY year
+	) following_year_sales
+FROM 
+	salesman_performance;

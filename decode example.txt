@@ -1,0 +1,19 @@
+
+IF (expression = search) THEN result
+[ELSE IF (expression = search) THEN result]
+ELSE default
+END IF
+
+DECODE ( expression, search, result [, search, result]... [,default] )
+
+example:
+SELECT DECODE(NULL, NULL, 1, 0) FROM DUAL;
+
+SELECT first_name, country,
+DECODE(country, 'USA', 'North America', 'UK', 'Europe') AS Decode_Result
+FROM customers;
+
+SELECT id, DECODE(col1, NULL, 'ZERO', col1) AS output FROM null_test_tab ORDER BY id;
+
+
+ --and to_number(decode(h.dte_end,'00000000',22991231,'        ',22991231,dte_end)) >= 20230915

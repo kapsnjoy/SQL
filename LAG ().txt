@@ -1,0 +1,72 @@
+Oracle LAG() is an analytic function that allows you to access the row at a given offset prior to the current row without using a self-join.
+
+The following illustrates the syntax of the LAG() function:
+
+LAG(expression [, offset ] [, default ])
+OVER (
+	[ query_partition_clause ] 
+	order_by_clause
+)
+Code language: SQL (Structured Query Language) (sql)
+In this syntax:
+
+expression
+is a scalar expression evaluated against the value of the row at a given offset prior to the current row.
+
+offset
+is the number of rows that you want to backward from the current row. The default is 1.
+
+default
+If the offset goes beyond the scope of the partition, the function returns the default. If you omit default, then the function returns NULL.
+
+query_partition_clause
+The query_partition_clause clause divides rows into partitions to which the LAG() function is applied. By default, the function treats the whole result set as a single partition.
+
+order_by_clause
+The order_by_clause clause specifies the order of the rows in each partition to which the LAG() function is applied.
+
+Similar to the LEAD() function, the LAG() function is very useful for calculating the difference between the values of current and previous rows.
+
+example #1:
+SELECT 
+	salesman_id,
+	year, 
+	sales,
+	LAG(sales) OVER (
+		ORDER BY year
+	) py_sales
+FROM 
+	salesman_performance
+WHERE
+	salesman_id = 62;
+
+example #2:
+WITH cte_sales (
+	salesman_id, 
+	year, 
+	sales,
+	py_sales) 
+AS (
+	SELECT 
+		salesman_id,
+		year, 
+		sales,
+		LAG(sales) OVER (
+			PARTITION BY salesman_id
+			ORDER BY year
+		) py_sales
+	FROM 
+		salesman_performance
+)
+SELECT 
+	salesman_id,
+	year,
+	sales,
+	py_sales,
+	CASE 
+    	 WHEN py_sales IS NULL THEN 'N/A'
+  	ELSE
+    	 TO_CHAR((sales - py_sales) * 100 / py_sales,'999999.99') || '%'
+  	END YoY
+FROM 
+	cte_sales;
