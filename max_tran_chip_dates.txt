@@ -1,0 +1,140 @@
+
+
+select * from t_re_teds_tranhist
+where id_medicaid = 'TD546751951'
+
+-- max chip_end_dt.. After 2 When, the 3rd when's is not executed correctly 
+select 
+id_medicaid
+,dly.dte_Added
+,NUM_CASE 
+,sak_tran
+,nam_first
+,nam_last
+,Num_SSN
+,IND_CHIP_1 
+,DTE_CHIP_EFFECTIVE_1 
+,DTE_CHIP_END_1 
+,IND_CHIP_2
+,DTE_CHIP_EFFECTIVE_2
+,DTE_CHIP_END_2
+,IND_CHIP_3
+,DTE_CHIP_EFFECTIVE_3 
+,DTE_CHIP_END_3
+,IND_CHIP_4
+,DTE_CHIP_EFFECTIVE_4 
+,DTE_CHIP_END_4
+, Case 
+      when IND_CHIP_4 = 'S' AND DTE_CHIP_EFFECTIVE_4 <> '00000000' 
+      then 
+         DTE_CHIP_EFFECTIVE_4 	
+        when IND_CHIP_3 = 'S' AND DTE_CHIP_EFFECTIVE_3 <> '00000000' then 
+                             DTE_CHIP_EFFECTIVE_3 
+                             
+      when IND_CHIP_2 = 'S' AND DTE_CHIP_EFFECTIVE_2 <> '00000000' then 
+                             DTE_CHIP_EFFECTIVE_2  
+                        
+     when IND_CHIP_1 = 'S' AND DTE_CHIP_EFFECTIVE_1 <> '00000000' then 
+                             DTE_CHIP_EFFECTIVE_1  
+    else '00000000'
+  end as MAX_Chip_eff_dt 
+,  Case 
+  when IND_CHIP_4 = 'S' AND  DTE_CHIP_END_4 <> '00000000' then 
+                        DTE_CHIP_END_4
+                        
+  when IND_CHIP_3 = 'S' AND  DTE_CHIP_END_3 <> '00000000' then 
+                        DTE_CHIP_END_3
+                     
+  when IND_CHIP_2 = 'S' AND  DTE_CHIP_END_2 <> '00000000' then 
+                       DTE_CHIP_END_2
+                      
+ when  IND_CHIP_1 = 'S' AND  DTE_CHIP_END_1 <> '00000000' then 
+                        DTE_CHIP_END_1
+  else '00000000'
+  end as MAx_chip_end_dt
+
+from t_re_teds_tranhist dly
+where dly.id_medicaid = 'TD546751951'
+and dly.dte_Added = ( select max(mx.dte_added)
+			   from  t_re_teds_tranhist mx
+				  where trim(mx.id_medicaid) = trim(dly.id_medicaid)
+					and mx.txn_Status = 'C'
+					) 
+;
+
+--revised term rids check
+with tran as
+( select
+dly.id_medicaid
+,dly.dte_Added
+,dly.NUM_CASE 
+,dly.sak_tran
+,dly.nam_first
+,dly.nam_last
+,dly.Num_SSN
+,IND_CHIP_1 
+,DTE_CHIP_EFFECTIVE_1 
+,DTE_CHIP_END_1 
+,IND_CHIP_2
+,DTE_CHIP_EFFECTIVE_2
+,DTE_CHIP_END_2
+,IND_CHIP_3
+,DTE_CHIP_EFFECTIVE_3 
+,DTE_CHIP_END_3
+,IND_CHIP_4
+,DTE_CHIP_EFFECTIVE_4 
+,DTE_CHIP_END_4
+, Case 
+      when IND_CHIP_4 = 'S' AND DTE_CHIP_EFFECTIVE_4 <> '00000000' 
+      then 
+         DTE_CHIP_EFFECTIVE_4 	
+        when IND_CHIP_3 = 'S' AND DTE_CHIP_EFFECTIVE_3 <> '00000000' then 
+                             DTE_CHIP_EFFECTIVE_3 
+                             
+      when IND_CHIP_2 = 'S' AND DTE_CHIP_EFFECTIVE_2 <> '00000000' then 
+                             DTE_CHIP_EFFECTIVE_2  
+                        
+     when IND_CHIP_1 = 'S' AND DTE_CHIP_EFFECTIVE_1 <> '00000000' then 
+                             DTE_CHIP_EFFECTIVE_1  
+    else '00000000'
+  end as MAX_Chip_eff_dt 
+,  Case 
+  when IND_CHIP_4 = 'S' AND  DTE_CHIP_END_4 <> '00000000' then 
+                        DTE_CHIP_END_4
+                        
+  when IND_CHIP_3 = 'S' AND  DTE_CHIP_END_3 <> '00000000' then 
+                        DTE_CHIP_END_3
+                     
+  when IND_CHIP_2 = 'S' AND  DTE_CHIP_END_2 <> '00000000' then 
+                       DTE_CHIP_END_2
+                      
+ when  IND_CHIP_1 = 'S' AND  DTE_CHIP_END_1 <> '00000000' then 
+                        DTE_CHIP_END_1
+  else '00000000'
+  end as MAx_chip_end_dt
+from t_re_teds_tranhist dly
+   , dcv5955.COVID_RIDS_TOBE_TERMED term
+where trim(dly.id_medicaid) = trim(term.id_medicaid)
+     and dly.dte_Added = ( select max(mx.dte_added)
+			   from  t_re_teds_tranhist mx
+				  where trim(mx.id_medicaid) = trim(dly.id_medicaid)
+					and mx.txn_Status = 'C'
+				)
+) 
+select tran.*
+from
+   tran tran
+ , t_re_base m
+ where 
+       trim(m.id_medicaid) = trim(tran.id_medicaid)
+ and ind_active = 'Y'
+ and  exists
+    ( select 1
+      from t_re_chip chp
+        where chp.sak_Recip = m.sak_recip
+         and ind_chip = 'S'
+         and CDE_STATUS1 =' '
+         and chp.DTE_END > to_number(tran.MAx_chip_end_dt)
+         );
+
+
